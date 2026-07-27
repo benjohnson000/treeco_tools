@@ -10,10 +10,10 @@
 ## User-accessible data
 
 - `data/flooring_vendors.csv`: SKU-to-vendor-code mapping.
+- `data/vendors.csv`: Vendor-code-to-name mapping for the vendor filter.
 - `data/branches.json`: configured branch names and IDs.
 - `data/imports/`: archived source reports from every successful import.
-- `data/backups/`: database backup created before every import.
-- `inventory.db`: current working database.
+- `inventory.db`: temporary database for the current application session.
 
 ## First-time setup
 

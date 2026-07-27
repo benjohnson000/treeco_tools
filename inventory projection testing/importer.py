@@ -93,8 +93,76 @@ def load_spruce_usage(filename, branches_filename=None):
             "This is not the 12-month Spruce usage report. "
             "Upload the report with 12 monthly columns and a Total column."
         )
-    if len({record["branch_id"] for record in records}) != len(branches):
-        raise ValueError("The usage report must contain sales rows for all configured branches.")
+    return pd.DataFrame(records, columns=USAGE_COLUMNS)
+
+
+def load_spruce_single_branch_stock(
+    filename, branch_id, vendors_filename=None, branches_filename=None
+):
+    """Load a single-branch Spruce Stock Status report."""
+    branches = load_branches(branches_filename) if branches_filename else load_branches()
+    branch_id = str(branch_id)
+    if branch_id not in branches:
+        raise ValueError(f"Unknown branch ID: {branch_id}")
+    vendor_map = load_vendor_map(vendors_filename) if vendors_filename else load_vendor_map()
+    records = []
+
+    for row in _csv_rows(filename):
+        if not _is_single_branch_stock_row(row):
+            continue
+        sku = row[0].strip()
+        description = row[1].strip()
+        records.append({
+            "sku": sku,
+            "description": description,
+            "branch_id": branch_id,
+            "branch_name": branches[branch_id],
+            "on_hand": _number(row[2]),
+            "on_order": _number(row[3]),
+            "available": _number(row[4]),
+            "min_qty": _number(row[5]) if len(row) > 5 else pd.NA,
+            "max_qty": _number(row[6]) if len(row) > 6 else pd.NA,
+            "suggested_qty": _number(row[7]) if len(row) > 7 else pd.NA,
+            "unit": row[8].strip() if len(row) > 8 else "",
+            "last_received": row[9].strip() if len(row) > 9 else "",
+            "last_cost": _number(row[10]) if len(row) > 10 else pd.NA,
+            "avg_cost": _number(row[11]) if len(row) > 11 else pd.NA,
+            "vendor": find_vendor_by_sku(sku, vendor_map),
+        })
+
+    inventory = pd.DataFrame(records, columns=STOCK_COLUMNS)
+    return inventory.loc[
+        ~inventory["description"].str.strip().str.startswith("##")
+    ].reset_index(drop=True)
+
+
+def load_spruce_single_branch_usage(filename, branch_id, branches_filename=None):
+    """Load a single-branch Spruce 12-month Usage report."""
+    branches = load_branches(branches_filename) if branches_filename else load_branches()
+    branch_id = str(branch_id)
+    if branch_id not in branches:
+        raise ValueError(f"Unknown branch ID: {branch_id}")
+    records = []
+    found_header = False
+
+    for row in _csv_rows(filename):
+        if _is_usage_header(row):
+            _usage_month_columns(row)
+            found_header = True
+            continue
+        if not found_header or not _is_single_branch_usage_row(row):
+            continue
+        records.append({
+            "sku": row[0].strip(),
+            "branch_id": branch_id,
+            "last_12_month_sales": sum(_number(row[index]) for index in range(3, 15)),
+        })
+
+    if not found_header:
+        raise ValueError(
+            "This is not the 12-month Spruce usage report. "
+            "Upload the report with 12 monthly columns and a Total column."
+        )
     return pd.DataFrame(records, columns=USAGE_COLUMNS)
 
 
@@ -128,6 +196,14 @@ def _is_branch_stock_row(row, branches):
 
 def _is_branch_usage_row(row, branches):
     return len(row) >= 15 and row[0] in branches
+
+
+def _is_single_branch_stock_row(row):
+    return len(row) >= 5 and row[0] and row[1] and _looks_numeric(row[2])
+
+
+def _is_single_branch_usage_row(row):
+    return len(row) >= 16 and row[0] and row[1] and _looks_numeric(row[2])
 
 
 def _is_usage_header(row):

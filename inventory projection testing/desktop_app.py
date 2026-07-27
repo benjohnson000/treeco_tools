@@ -2,10 +2,13 @@
 
 import threading
 from http.server import ThreadingHTTPServer
+import os
 from pathlib import Path
 
 import webview
 
+from app_paths import DATA_DIR, ensure_data_directories
+from database import start_new_session
 from dashboard import HOST, PORT, Handler
 
 
@@ -32,8 +35,14 @@ class DesktopApi:
             file.write(contents)
         return str(destination)
 
+    def open_data_folder(self):
+        ensure_data_directories()
+        os.startfile(DATA_DIR)
+        return str(DATA_DIR)
+
 
 def main():
+    start_new_session()
     server = ThreadingHTTPServer((HOST, PORT), Handler)
     server_thread = threading.Thread(target=server.serve_forever, daemon=True)
     server_thread.start()
