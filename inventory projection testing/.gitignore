@@ -10,3 +10,6 @@ data/backups/
 build/
 dist/
 *.spec
+
+# Generated from logo.png during the desktop build
+icon.ico

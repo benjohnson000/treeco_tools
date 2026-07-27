@@ -1,5 +1,6 @@
 pandas
 SQLAlchemy
 numpy
+Pillow
 pywebview
 pyinstaller
