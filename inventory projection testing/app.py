@@ -54,11 +54,7 @@ def initialize_selection(projection):
         st.session_state.order_amount_overrides = {}
 
     if not st.session_state.get("selection_initialized"):
-        st.session_state.selected_item_keys = set(
-            projection.loc[
-                projection["recommended_order_qty"].gt(0), "item_key"
-            ]
-        )
+        st.session_state.selected_item_keys = set()
         st.session_state.selection_initialized = True
 
 
