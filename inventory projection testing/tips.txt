@@ -2,3 +2,4 @@
 py -m pip install -r requirements.txt
 
 # to build app
+.\build_desktop.ps1

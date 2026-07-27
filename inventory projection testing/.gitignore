@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+
+# Local application state and report archives
+*.db
+data/imports/
+data/backups/
+
+# PyInstaller build output
+build/
+dist/
+*.spec
