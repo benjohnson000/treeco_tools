@@ -1,0 +1,5 @@
+{
+  "stock_target_days": 120.0,
+  "vendor_lead_time_days": 14.0,
+  "buffer_days": 7.0
+}

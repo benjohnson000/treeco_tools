@@ -1,9 +1,10 @@
 from pathlib import Path
 import csv
 
+from app_paths import DATA_DIR
 
-VENDORS_FILE = Path(__file__).parent / "data" / "vendors.txt"
-VENDOR_MAP_FILE = Path(__file__).parent / "data" / "flooring_vendors.csv"
+VENDORS_FILE = DATA_DIR / "vendors.txt"
+VENDOR_MAP_FILE = DATA_DIR / "flooring_vendors.csv"
 
 
 def load_vendors(filename=VENDORS_FILE):

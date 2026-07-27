@@ -1,8 +1,8 @@
 import json
-from pathlib import Path
 
+from app_paths import DATA_DIR
 
-BRANCHES_FILE = Path(__file__).parent / "data" / "branches.json"
+BRANCHES_FILE = DATA_DIR / "branches.json"
 
 
 def load_branches(filename=BRANCHES_FILE):

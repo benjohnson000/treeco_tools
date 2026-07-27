@@ -4,7 +4,7 @@
 
 1. Double-click `start_app.bat`.
 2. Generate the Spruce Stock Status CSV and the 12-month Usage CSV.
-3. Upload both files in the application sidebar.
+3. Upload both files in the Import Spruce reports section.
 4. Review the recommendations, adjust order amounts, and download the consolidated order CSV.
 
 ## User-accessible data
@@ -23,4 +23,10 @@ Install Python 3.11 or newer, selecting **Add Python to PATH**, then run:
 python -m pip install -r requirements.txt
 ```
 
-After that, double-click `start_app.bat` to open the tool.
+After that, double-click `start_app.bat` to open the native desktop tool.
+
+## Build a standalone Windows executable
+
+Run `./build_desktop.ps1` from PowerShell. The distributable application is
+created in `dist`. Keep `SpruceInventoryReorder.exe`, `settings.json`, and the
+`data` folder together when copying the tool to another computer.

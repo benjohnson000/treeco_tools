@@ -1,0 +1,10 @@
+# Add one vendor name per line.
+# Blank lines and lines beginning with # are ignored.
+#
+# Example:
+# Acme Supply
+# Vendor Brand Name
+BONA
+UZIN
+PALLMANN
+BERGER

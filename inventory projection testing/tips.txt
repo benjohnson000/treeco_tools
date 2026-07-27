@@ -1,5 +1,4 @@
 # to install all required modules:
 py -m pip install -r requirements.txt
 
-# to run streamlit dashboard:
-py -m streamlit run app.py
+# to build app

@@ -1,9 +1,16 @@
-"""Application folders that work when launched from any directory."""
+"""Application folders that work in development and packaged desktop builds."""
 
 from pathlib import Path
+import sys
 
 
-APP_DIR = Path(__file__).resolve().parent
+# PyInstaller unpacks code to a temporary folder. User data must stay beside
+# the executable so it remains available between runs and upgrades.
+APP_DIR = (
+    Path(sys.executable).resolve().parent
+    if getattr(sys, "frozen", False)
+    else Path(__file__).resolve().parent
+)
 DATA_DIR = APP_DIR / "data"
 BACKUP_DIR = DATA_DIR / "backups"
 IMPORT_DIR = DATA_DIR / "imports"
