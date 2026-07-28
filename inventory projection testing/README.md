@@ -12,6 +12,7 @@
 - `data/flooring_vendors.csv`: SKU-to-vendor-code mapping.
 - `data/vendors.csv`: Vendor-code-to-name mapping for the vendor filter.
 - `data/branches.json`: configured branch names and IDs.
+- `data/settings.json`: reorder settings.
 - `data/imports/`: archived source reports from every successful import.
 - `inventory.db`: temporary database for the current application session.
 
@@ -28,5 +29,5 @@ After that, double-click `start_app.bat` to open the native desktop tool.
 ## Build a standalone Windows executable
 
 Run `./build_desktop.ps1` from PowerShell. The distributable application is
-created in `dist`. Keep `SpruceInventoryReorder.exe`, `settings.json`, and the
+created in `dist`. Keep `Spruce Reorder Tool.exe`, `settings.json`, and the
 `data` folder together when copying the tool to another computer.
