@@ -60,11 +60,15 @@ def parse_prices(path: Path):
                     sku = cells[idx].upper(); break
             if not sku or sku.lower() in {"sku", "sku #"}: continue
             description = cells[0] if cells else ""
+            carton_sqft = None
+            if len(cells) > 2:
+                carton_match = re.search(r"([\d.]+)\s*(?:sq\.?\s*ft|sqft)", cells[2], re.I)
+                if carton_match: carton_sqft = float(carton_match.group(1))
             price = None
             for idx in (7, 5):
                 if idx < len(cells) and re.fullmatch(r"\d+(?:\.\d+)?", cells[idx]):
                     price = float(cells[idx]); break
-            products[sku] = {"sku": sku, "description": description, "collection": collection, "price_per_sqft": price}
+            products[sku] = {"sku": sku, "description": description, "collection": collection, "price_per_sqft": price, "carton_sqft": carton_sqft}
     return products
 
 def parse_stock(path: Path, branch_names):
@@ -107,7 +111,7 @@ def build_db(price_path, stock_path, output, branch_names):
     con = sqlite3.connect(output)
     con.executescript("""
     DROP TABLE IF EXISTS products; DROP TABLE IF EXISTS stock_by_branch; DROP TABLE IF EXISTS imports;
-    CREATE TABLE products (sku TEXT PRIMARY KEY, description TEXT NOT NULL, collection TEXT, price_per_sqft REAL, total_stock REAL NOT NULL DEFAULT 0);
+    CREATE TABLE products (sku TEXT PRIMARY KEY, description TEXT NOT NULL, collection TEXT, price_per_sqft REAL, carton_sqft REAL, total_stock REAL NOT NULL DEFAULT 0);
     CREATE TABLE stock_by_branch (sku TEXT NOT NULL, branch TEXT NOT NULL, quantity REAL NOT NULL DEFAULT 0, PRIMARY KEY (sku, branch), FOREIGN KEY (sku) REFERENCES products(sku));
     CREATE TABLE imports (id INTEGER PRIMARY KEY, imported_at TEXT NOT NULL, stock_report_date TEXT, price_file TEXT, stock_file TEXT);
     """)
@@ -116,7 +120,7 @@ def build_db(price_path, stock_path, output, branch_names):
         p, s = prices.get(sku, {}), stock.get(sku, {})
         branches = s.get("branches", {})
         total = sum(branches.values())
-        con.execute("INSERT INTO products VALUES (?,?,?,?,?)", (sku, p.get("description") or s.get("description") or sku, p.get("collection"), p.get("price_per_sqft"), total))
+        con.execute("INSERT INTO products VALUES (?,?,?,?,?,?)", (sku, p.get("description") or s.get("description") or sku, p.get("collection"), p.get("price_per_sqft"), p.get("carton_sqft"), total))
         for branch, qty in branches.items(): con.execute("INSERT INTO stock_by_branch VALUES (?,?,?)", (sku, branch, qty))
     con.execute("INSERT INTO imports(imported_at,stock_report_date,price_file,stock_file) VALUES (?,?,?,?)", (dt.datetime.now().isoformat(timespec="seconds"), report_date, str(price_path), str(stock_path)))
     con.commit(); con.close()
