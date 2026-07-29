@@ -94,9 +94,15 @@ def parse_stock(path: Path, branch_names):
 def build_db(price_path, stock_path, output, branch_names):
     prices = parse_prices(price_path)
     stock, report_date = parse_stock(stock_path, branch_names)
-    ignored_description = lambda item: item.get("description", "").lstrip().startswith(("##", "<"))
-    prices = {sku: item for sku, item in prices.items() if not ignored_description(item)}
-    stock = {sku: item for sku, item in stock.items() if not ignored_description(item)}
+    # Keep discontinued ## items only while they still have stock somewhere.
+    # Template placeholders beginning with < are always excluded.
+    for sku in set(prices) | set(stock):
+        price_item, stock_item = prices.get(sku, {}), stock.get(sku, {})
+        description = price_item.get("description") or stock_item.get("description") or ""
+        total_stock = sum(stock_item.get("branches", {}).values())
+        if description.lstrip().startswith("<") or (description.lstrip().startswith("##") and total_stock <= 0):
+            prices.pop(sku, None)
+            stock.pop(sku, None)
     output.parent.mkdir(parents=True, exist_ok=True)
     con = sqlite3.connect(output)
     con.executescript("""

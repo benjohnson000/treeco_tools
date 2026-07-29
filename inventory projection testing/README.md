@@ -13,6 +13,7 @@
 - `data/vendors.csv`: Vendor-code-to-name mapping for the vendor filter.
 - `data/branches.json`: configured branch names and IDs.
 - `data/settings.json`: reorder settings.
+- `data/treeco-horizontal-logo-white.png`: Treeco dashboard logo.
 - `data/imports/`: archived source reports from every successful import.
 - `inventory.db`: temporary database for the current application session.
 

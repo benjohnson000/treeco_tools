@@ -25,3 +25,4 @@ Copy-Item data\branches.json dist\data\branches.json -Force
 Copy-Item data\flooring_vendors.csv dist\data\flooring_vendors.csv -Force
 Copy-Item data\vendors.csv dist\data\vendors.csv -Force
 Copy-Item data\settings.json dist\data\settings.json -Force
+Copy-Item data\treeco-horizontal-logo-white.png dist\data\treeco-horizontal-logo-white.png -Force

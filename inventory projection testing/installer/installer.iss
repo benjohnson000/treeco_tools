@@ -42,6 +42,7 @@ Source: "C:\Users\ConorKarperien\Documents\GitHub\treeco-stuff\inventory project
 Source: "C:\Users\ConorKarperien\Documents\GitHub\treeco-stuff\inventory projection testing\dist\data\branches.json"; DestDir: "{app}\data"; Flags: ignoreversion
 Source: "C:\Users\ConorKarperien\Documents\GitHub\treeco-stuff\inventory projection testing\dist\data\flooring_vendors.csv"; DestDir: "{app}\data"; Flags: ignoreversion
 Source: "C:\Users\ConorKarperien\Documents\GitHub\treeco-stuff\inventory projection testing\dist\data\vendors.csv"; DestDir: "{app}\data"; Flags: ignoreversion
+Source: "C:\Users\ConorKarperien\Documents\GitHub\treeco-stuff\inventory projection testing\dist\data\treeco-horizontal-logo-white.png"; DestDir: "{app}\data"; Flags: ignoreversion
 
 [Icons]
 Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
