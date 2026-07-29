@@ -95,9 +95,34 @@ def parse_stock(path: Path, branch_names):
                 result[current_sku]["branches"][branch_names[cells[0]]] = float(cells[1])
     return result, report_date
 
+def merge_variant_skus(prices, stock):
+    """Combine distributor-style trailing-V variants, but never combine HB products."""
+    merged = {}
+    for sku in list(set(prices) | set(stock)):
+        if not sku.endswith("V") or sku.endswith("HBV"):
+            continue
+        base = sku[:-1]
+        if base not in prices and base not in stock:
+            continue
+        canonical = base if base in prices else sku
+        other = sku if canonical == base else base
+        merged.setdefault(canonical, [canonical]).append(other)
+        if other in prices and canonical not in prices:
+            prices[canonical] = prices[other]
+        if other in stock:
+            target = stock.setdefault(canonical, {"description": "", "branches": {}})
+            for branch, qty in stock[other].get("branches", {}).items():
+                target["branches"][branch] = target["branches"].get(branch, 0) + qty
+            if not target.get("description"): target["description"] = stock[other].get("description", "")
+        if other != canonical:
+            prices.pop(other, None)
+            stock.pop(other, None)
+    return prices, stock, merged
+
 def build_db(price_path, stock_path, output, branch_names):
     prices = parse_prices(price_path)
     stock, report_date = parse_stock(stock_path, branch_names)
+    prices, stock, merged = merge_variant_skus(prices, stock)
     # Keep discontinued ## items only while they still have stock somewhere.
     # Template placeholders beginning with < are always excluded.
     for sku in set(prices) | set(stock):
@@ -111,7 +136,7 @@ def build_db(price_path, stock_path, output, branch_names):
     con = sqlite3.connect(output)
     con.executescript("""
     DROP TABLE IF EXISTS products; DROP TABLE IF EXISTS stock_by_branch; DROP TABLE IF EXISTS imports;
-    CREATE TABLE products (sku TEXT PRIMARY KEY, description TEXT NOT NULL, collection TEXT, price_per_sqft REAL, carton_sqft REAL, total_stock REAL NOT NULL DEFAULT 0);
+    CREATE TABLE products (sku TEXT PRIMARY KEY, description TEXT NOT NULL, collection TEXT, price_per_sqft REAL, carton_sqft REAL, total_stock REAL NOT NULL DEFAULT 0, consolidated INTEGER NOT NULL DEFAULT 0, source_skus TEXT);
     CREATE TABLE stock_by_branch (sku TEXT NOT NULL, branch TEXT NOT NULL, quantity REAL NOT NULL DEFAULT 0, PRIMARY KEY (sku, branch), FOREIGN KEY (sku) REFERENCES products(sku));
     CREATE TABLE imports (id INTEGER PRIMARY KEY, imported_at TEXT NOT NULL, stock_report_date TEXT, price_file TEXT, stock_file TEXT);
     """)
@@ -120,7 +145,8 @@ def build_db(price_path, stock_path, output, branch_names):
         p, s = prices.get(sku, {}), stock.get(sku, {})
         branches = s.get("branches", {})
         total = sum(branches.values())
-        con.execute("INSERT INTO products VALUES (?,?,?,?,?,?)", (sku, p.get("description") or s.get("description") or sku, p.get("collection"), p.get("price_per_sqft"), p.get("carton_sqft"), total))
+        source_skus = merged.get(sku, [])
+        con.execute("INSERT INTO products VALUES (?,?,?,?,?,?,?,?)", (sku, p.get("description") or s.get("description") or sku, p.get("collection"), p.get("price_per_sqft"), p.get("carton_sqft"), total, int(bool(source_skus)), ", ".join(source_skus) if source_skus else None))
         for branch, qty in branches.items(): con.execute("INSERT INTO stock_by_branch VALUES (?,?,?)", (sku, branch, qty))
     con.execute("INSERT INTO imports(imported_at,stock_report_date,price_file,stock_file) VALUES (?,?,?,?)", (dt.datetime.now().isoformat(timespec="seconds"), report_date, str(price_path), str(stock_path)))
     con.commit(); con.close()

@@ -66,11 +66,11 @@ class Handler(SimpleHTTPRequestHandler):
             if query:
                 where = "WHERE p.sku LIKE ? OR p.description LIKE ?"
                 params = [f"%{query}%", f"%{query}%"]
-            products = con.execute(f"SELECT p.sku, p.description, p.collection, p.carton_sqft, p.total_stock FROM products p {where} ORDER BY p.collection, p.description, p.sku", params).fetchall()
+            products = con.execute(f"SELECT p.sku, p.description, p.collection, p.carton_sqft, p.total_stock, p.consolidated, p.source_skus FROM products p {where} ORDER BY p.collection, p.description, p.sku", params).fetchall()
             output = []
-            for sku, description, collection, carton_sqft, total in products:
+            for sku, description, collection, carton_sqft, total, consolidated, source_skus in products:
                 stock = dict(con.execute("SELECT branch, quantity FROM stock_by_branch WHERE sku=?", (sku,)))
-                output.append({"sku": sku, "description": description, "collection": collection or "", "carton_sqft": carton_sqft, "total_stock": total, "branches": {b: stock.get(b, 0) for b in branches}})
+                output.append({"sku": sku, "description": description, "collection": collection or "", "carton_sqft": carton_sqft, "total_stock": total, "consolidated": bool(consolidated), "source_skus": source_skus or "", "branches": {b: stock.get(b, 0) for b in branches}})
             con.close()
             body = json.dumps({"branches": branches, "products": output}).encode()
             self.send_response(200); self.send_header("Content-Type", "application/json"); self.send_header("Content-Length", str(len(body))); self.end_headers(); self.wfile.write(body)
