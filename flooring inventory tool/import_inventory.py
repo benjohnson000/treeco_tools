@@ -99,12 +99,17 @@ def merge_variant_skus(prices, stock):
     """Combine distributor-style trailing-V variants, but never combine HB products."""
     merged = {}
     for sku in list(set(prices) | set(stock)):
-        if not sku.endswith("V") or sku.endswith("HBV"):
+        # HBR is a herringbone distributor variant of the corresponding HB SKU.
+        # Other trailing-V variants are consolidated only for non-HB products.
+        if sku.endswith("HBR"):
+            base = sku[:-1]
+        elif sku.endswith("V") and not sku.endswith("HBV"):
+            base = sku[:-1]
+        else:
             continue
-        base = sku[:-1]
         if base not in prices and base not in stock:
             continue
-        canonical = base if base in prices else sku
+        canonical = base if sku.endswith("HBR") or base in prices else sku
         other = sku if canonical == base else base
         merged.setdefault(canonical, [canonical]).append(other)
         if other in prices and canonical not in prices:
