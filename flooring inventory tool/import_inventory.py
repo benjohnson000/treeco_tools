@@ -133,7 +133,7 @@ def build_db(price_path, stock_path, output, branch_names):
     for sku in set(prices) | set(stock):
         price_item, stock_item = prices.get(sku, {}), stock.get(sku, {})
         description = price_item.get("description") or stock_item.get("description") or ""
-        total_stock = sum(stock_item.get("branches", {}).values())
+        total_stock = sum(max(0, quantity) for quantity in stock_item.get("branches", {}).values())
         if description.lstrip().startswith("<") or (description.lstrip().startswith("##") and total_stock <= 0):
             prices.pop(sku, None)
             stock.pop(sku, None)
@@ -149,7 +149,9 @@ def build_db(price_path, stock_path, output, branch_names):
     for sku in skus:
         p, s = prices.get(sku, {}), stock.get(sku, {})
         branches = s.get("branches", {})
-        total = sum(branches.values())
+        # Negative branch balances are not available inventory. Clamp each branch
+        # before summing so one negative balance cannot hide positive stock elsewhere.
+        total = sum(max(0, quantity) for quantity in branches.values())
         source_skus = merged.get(sku, [])
         con.execute("INSERT INTO products VALUES (?,?,?,?,?,?,?,?)", (sku, p.get("description") or s.get("description") or sku, p.get("collection"), p.get("price_per_sqft"), p.get("carton_sqft"), total, int(bool(source_skus)), ", ".join(source_skus) if source_skus else None))
         for branch, qty in branches.items(): con.execute("INSERT INTO stock_by_branch VALUES (?,?,?)", (sku, branch, qty))
