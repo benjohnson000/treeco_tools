@@ -6,7 +6,11 @@ from pathlib import Path
 
 TREECO_DATA_DIR = Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local")) / "Treeco"
 APP_DATA_DIR = TREECO_DATA_DIR / "Buy Group Reporting"
-DATA_DIR = APP_DATA_DIR / "data"
+DATA_DIR = Path(
+    os.environ.get("DATA_DIR")
+    or os.environ.get("RAILWAY_VOLUME_MOUNT_PATH")
+    or APP_DATA_DIR / "data"
+)
 BUY_GROUPS_FILE = DATA_DIR / "account_number_vs_buy_group.csv"
 SALES_DATABASE = DATA_DIR / "buy_group_reporting.sqlite"
 
