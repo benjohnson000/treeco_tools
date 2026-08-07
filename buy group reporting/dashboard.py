@@ -129,6 +129,7 @@ def report(selected_groups, description_filter="", exclude_zero_unit_price=False
         if description_filter not in raw["Description"].casefold(): continue
         if exclude_zero_unit_price and is_zero_unit_price(raw["Unit Price"]): continue
         result.append([raw[header] for header in SALES_HEADERS] + [f"{raw['Account']}-{raw['Job']}", location])
+    result.sort(key=lambda row: account_sort_key(row[SALES_HEADERS.index("Account")]))
     return {"groups": groups, "headers": REPORT_HEADERS, "rows": result, "sales_file": import_row["source_file"] if import_row else None}
 
 
@@ -137,6 +138,14 @@ def is_zero_unit_price(value):
         return float(clean(value).replace(",", "")) == 0
     except ValueError:
         return False
+
+
+def account_sort_key(value):
+    value = clean(value)
+    try:
+        return (0, int(value))
+    except ValueError:
+        return (1, value.casefold())
 
 
 def save_buy_groups(contents):
