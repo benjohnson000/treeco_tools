@@ -81,7 +81,7 @@ class Handler(BaseHTTPRequestHandler):
 
 SALES_HEADERS = ["Document", "Inv Type", "Account", "Name", "Job", "Sales/ Material Branch", "Date", "Accounting Year", "Accounting Period", "Item Ext Price", "Item Ext Cost", "Invoice GM", "Item", "Description", "Quantity", "Unit Price", "Unitcost", "Item GM"]
 SALES_COLUMNS = set(SALES_HEADERS)
-REPORT_HEADERS = SALES_HEADERS + ["Account-Job"]
+REPORT_HEADERS = SALES_HEADERS + ["Account-Job", "Location"]
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS import_batches (id INTEGER PRIMARY KEY, source_file TEXT NOT NULL, imported_at TEXT NOT NULL, row_count INTEGER NOT NULL);
@@ -100,12 +100,19 @@ def numeric(value, kind=float):
 def buy_group_mapping():
     if not BUY_GROUPS_FILE.exists(): return {}
     with BUY_GROUPS_FILE.open(encoding="utf-8-sig", newline="") as file:
-        return {clean(row["Account Number"]).split("~", 1)[0]: clean(row["Buy Group"]) or "Unassigned" for row in csv.DictReader(file) if clean(row.get("Account Number"))}
+        return {
+            clean(row["Account Number"]).split("~", 1)[0]: (
+                clean(row["Buy Group"]) or "Unassigned",
+                clean(row.get("City")),
+            )
+            for row in csv.DictReader(file)
+            if clean(row.get("Account Number"))
+        }
 
 
 def report(selected_groups, description_filter="", exclude_zero_unit_price=False):
     mapping = buy_group_mapping()
-    groups = sorted(set(mapping.values()) | {"Unassigned"})
+    groups = sorted({group for group, _location in mapping.values()} | {"Unassigned"})
     if not SALES_DATABASE.exists(): return {"groups": groups, "headers": REPORT_HEADERS, "rows": [], "sales_file": None}
     with sqlite3.connect(SALES_DATABASE) as database:
         database.row_factory = sqlite3.Row
@@ -117,11 +124,11 @@ def report(selected_groups, description_filter="", exclude_zero_unit_price=False
     description_filter = description_filter.strip().casefold()
     for row in rows:
         raw = json.loads(row["raw_data"])
-        group = mapping.get(clean(raw["Account"]), "Unassigned")
+        group, location = mapping.get(clean(raw["Account"]), ("Unassigned", ""))
         if selected_groups and group not in selected_groups: continue
         if description_filter not in raw["Description"].casefold(): continue
         if exclude_zero_unit_price and is_zero_unit_price(raw["Unit Price"]): continue
-        result.append([raw[header] for header in SALES_HEADERS] + [f"{raw['Account']}-{raw['Job']}"])
+        result.append([raw[header] for header in SALES_HEADERS] + [f"{raw['Account']}-{raw['Job']}", location])
     return {"groups": groups, "headers": REPORT_HEADERS, "rows": result, "sales_file": import_row["source_file"] if import_row else None}
 
 
