@@ -50,7 +50,8 @@ The dashboard saves uploaded essentials, including the Account Number vs Buy Gro
 
 `%LOCALAPPDATA%\Treeco\Buy Group Reporting\data`
 
-Sales uploads are stored in `buy_group_reporting.sqlite`.
+Sales uploads are stored in `buy_group_reporting.sqlite`. Uploading a new sales
+CSV replaces the current sales dataset; prior sales data is not retained.
 
 ## Import the supplied CSV files
 
