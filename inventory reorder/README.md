@@ -32,3 +32,21 @@ After that, double-click `start_app.bat` to open the native desktop tool.
 Run `./build_desktop.ps1` from PowerShell. The distributable application is
 created in `dist`. Keep `Spruce Reorder Tool.exe`, `settings.json`, and the
 `data` folder together when copying the tool to another computer.
+
+## Deploy internally on Railway
+
+Create a Railway service using this folder as its root directory. The included
+`Dockerfile` and `railway.json` run the browser version of the tool.
+
+Set these Railway variables:
+
+- `APP_PASSWORD`: required password for the internal site.
+- `APP_USERNAME`: optional username; defaults to `treeco`.
+
+Create a Railway volume and mount it at `/data`. The tool stores its settings,
+vendor and branch configuration, imported reports, and the active inventory
+database there. On its first run, it copies the default configuration files to
+the empty volume; later changes persist across deployments.
+
+The browser version downloads the consolidated order CSV directly. The desktop
+only **Open data folder** button is automatically hidden in the browser.
