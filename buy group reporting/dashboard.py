@@ -105,7 +105,7 @@ def buy_group_mapping():
     if not BUY_GROUPS_FILE.exists(): return {}
     with BUY_GROUPS_FILE.open(encoding="utf-8-sig", newline="") as file:
         return {
-            clean(row["Account Number"]).split("~", 1)[0]: (
+            clean(row["Account Number"]): (
                 clean(row["Buy Group"]) or "Unassigned",
                 clean(row.get("City")),
             )
@@ -118,6 +118,12 @@ def branch_code(value):
     """Use the first four-digit branch where a sales row lists multiple branches."""
     value = clean(value)
     return value[:4] if len(value) >= 4 and value[:4].isdigit() else value
+
+
+def account_job_key(account, job):
+    """Return the mapping key used for a sales account and its ship-to job."""
+    account, job = clean(account), clean(job)
+    return f"{account}~{job}" if account and job else account
 
 
 def report(selected_groups, selected_branches, description_filter="", exclude_zero_unit_price=False):
@@ -135,7 +141,11 @@ def report(selected_groups, selected_branches, description_filter="", exclude_ze
     description_filter = description_filter.strip().casefold()
     for row in rows:
         raw = json.loads(row["raw_data"])
-        group, location = mapping.get(clean(raw["Account"]), ("Unassigned", ""))
+        account = clean(raw["Account"])
+        group, location = mapping.get(
+            account_job_key(account, raw["Job"]),
+            mapping.get(account, ("Unassigned", "")),
+        )
         if selected_groups and group not in selected_groups: continue
         if selected_branches and branch_code(raw["Sales/ Material Branch"]) not in selected_branches: continue
         if description_filter not in raw["Description"].casefold(): continue
