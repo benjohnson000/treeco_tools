@@ -22,4 +22,6 @@ function fmt(v){return Number(v||0).toLocaleString()}function totalSqft(p){retur
 document.querySelector('.disclaimer').innerHTML='<span class="disclaimer-tag">PLEASE NOTE</span><strong>If the item you are looking for is out of stock, we will likely be able to get what you need. Contact your Treeco representative to see if they can free up stock.</strong> If an item shows out of stock, we may still be able to get what you need. Contact your Treeco representative—they may be able to locate or free up stock for you.';
 </script><script>
 new MutationObserver(()=>document.querySelectorAll('#head th').forEach(cell=>{if(cell.textContent==='Total stock')cell.textContent='Available qty'})).observe(document.querySelector('#head'),{childList:true,subtree:true});
+</script><script>
+document.querySelector('.disclaimer').innerHTML='<span class="disclaimer-tag">PLEASE NOTE</span>If an item shows out of stock, we may still be able to get you what you need. Contact your Treeco representative, they may be able to locate or free up stock for you.';
 </script></body></html>
