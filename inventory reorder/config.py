@@ -7,7 +7,6 @@ LEGACY_SETTINGS_FILE = APP_DIR / "settings.json"
 REQUIRED_SETTINGS = (
     "stock_target_days",
     "vendor_lead_time_days",
-    "buffer_days",
 )
 
 

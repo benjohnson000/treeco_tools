@@ -33,7 +33,6 @@ def build_inventory_projection(inventory, usage_history, settings, include_inact
     target_coverage_days = (
         settings["stock_target_days"]
         + settings["vendor_lead_time_days"]
-        + settings["buffer_days"]
     )
     projection["recommended_order_qty"] = np.ceil(
         (
