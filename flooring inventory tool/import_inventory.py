@@ -83,7 +83,9 @@ def parse_stock(path: Path, branch_names):
             if current_sku and len(cells) >= 5 and cells[0] in branch_names:
                 numeric = lambda x: re.fullmatch(r"-?[\d,]+(?:\.\d+)?", x or "")
                 if all(numeric(x) for x in cells[1:5]):
-                    result[current_sku]["branches"][branch_names[cells[0]]] = float(cells[1].replace(",", ""))
+                    # ECI columns are OnHand, OnOrder, then Avail. Customer-facing
+                    # inventory must use the available quantity, not on-hand stock.
+                    result[current_sku]["branches"][branch_names[cells[0]]] = float(cells[3].replace(",", ""))
                     continue
             if len(cells) >= 2 and re.fullmatch(r"[A-Za-z0-9]+", cells[0]) and not all(not x for x in cells[1:]):
                 # SKU rows have a description and do not have numeric inventory fields.
@@ -92,7 +94,7 @@ def parse_stock(path: Path, branch_names):
                     result.setdefault(current_sku, {"description": current_desc, "branches": {}})
                     continue
             if current_sku and len(cells) >= 5 and cells[0] in branch_names and all(re.fullmatch(r"-?\d+(?:\.\d+)?", x or "") for x in cells[1:5]):
-                result[current_sku]["branches"][branch_names[cells[0]]] = float(cells[1])
+                result[current_sku]["branches"][branch_names[cells[0]]] = float(cells[3])
     return result, report_date
 
 def merge_variant_skus(prices, stock):
