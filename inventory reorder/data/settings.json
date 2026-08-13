@@ -1,4 +1,7 @@
 {
   "stock_target_days": 120.0,
-  "vendor_lead_time_days": 14.0
+  "vendor_lead_time_days": 14.0,
+  "location_remap_enabled": false,
+  "location_remap_sources": ["1000", "2000", "4000", "6000"],
+  "location_remap_target": "8000"
 }
