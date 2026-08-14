@@ -18,12 +18,33 @@ def load_vendor_map(filename=VENDOR_MAP_FILE):
             sku = (row.get("SKU") or "").strip()
             vendor = (row.get("Vendor") or "").strip()
             if sku:
-                mapping[sku] = vendor or None
+                mapping[sku.casefold()] = vendor or None
     return mapping
 
 
 def find_vendor_by_sku(sku, vendor_map):
-    return vendor_map.get(str(sku).strip())
+    return vendor_map.get(str(sku).strip().casefold())
+
+
+def save_vendor_map(contents, filename=VENDOR_MAP_FILE):
+    """Validate and save a Spruce SKU-to-vendor mapping CSV."""
+    rows = csv.DictReader(contents.lstrip("\ufeff").splitlines())
+    if not rows.fieldnames or not {"SKU", "Vendor"}.issubset(rows.fieldnames):
+        raise ValueError("Vendor mapping CSV must include SKU and Vendor columns.")
+
+    mapping = {}
+    for row in rows:
+        sku = (row.get("SKU") or "").strip()
+        vendor = (row.get("Vendor") or "").strip()
+        if sku:
+            mapping[sku.casefold()] = vendor or None
+
+    if not mapping:
+        raise ValueError("Vendor mapping CSV must include at least one SKU.")
+
+    filename.parent.mkdir(parents=True, exist_ok=True)
+    filename.write_text(contents.lstrip("\ufeff"), encoding="utf-8")
+    return mapping
 
 
 def load_vendor_names(filename=VENDOR_NAMES_FILE):

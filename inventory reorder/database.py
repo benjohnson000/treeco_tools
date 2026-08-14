@@ -1,4 +1,5 @@
-from sqlalchemy import create_engine
+import pandas as pd
+from sqlalchemy import create_engine, inspect
 
 from app_paths import DATABASE_FILE, ensure_data_directories
 
@@ -18,3 +19,17 @@ def clear_imported_data():
     engine.dispose()
     if DATABASE_FILE.exists():
         DATABASE_FILE.unlink()
+
+
+def refresh_inventory_vendors(vendor_map):
+    """Apply an updated SKU-to-vendor mapping to the current inventory."""
+    engine.dispose()
+    if "inventory" not in inspect(engine).get_table_names():
+        return 0
+
+    inventory = pd.read_sql("SELECT * FROM inventory", engine)
+    inventory["vendor"] = inventory["sku"].map(
+        lambda sku: vendor_map.get(str(sku).strip().casefold())
+    )
+    inventory.to_sql("inventory", engine, if_exists="replace", index=False)
+    return int(inventory["vendor"].notna().sum())

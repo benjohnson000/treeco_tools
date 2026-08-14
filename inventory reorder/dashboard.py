@@ -11,7 +11,12 @@ import pandas as pd
 from app_paths import DATA_DIR, IMPORT_DIR, ensure_data_directories
 from branches import load_branches
 from config import load_settings, save_settings
-from database import clear_imported_data, engine, replace_imported_data
+from database import (
+    clear_imported_data,
+    engine,
+    refresh_inventory_vendors,
+    replace_imported_data,
+)
 from importer import (
     load_spruce_single_branch_stock,
     load_spruce_single_branch_usage,
@@ -20,7 +25,7 @@ from importer import (
 )
 from metrics import build_inventory_projection
 from orders import build_order_export
-from vendors import load_vendor_names
+from vendors import load_vendor_names, save_vendor_map
 
 
 HOST = "127.0.0.1"
@@ -53,6 +58,7 @@ PAGE = r"""<!doctype html>
 <section class="panel"><details><summary><b>Reorder settings</b></summary><div class="grid settings" style="margin-top:12px"><label>Stock target (days)<input id="stock_target_days" type="number" min="0" step="1"></label><label>Vendor lead time (days)<input id="vendor_lead_time_days" type="number" min="0" step="1"></label><button id="save-settings">Save settings</button></div><div id="settings-status" class="status"></div></details></section>
 <section class="panel"><details><summary><b>Sales location remapping</b></summary><div class="grid settings" style="margin-top:12px"><label>Enable remapping<select id="location_remap_enabled"><option value="false">Disabled</option><option value="true">Enabled</option></select></label><button id="save-remap-settings">Save remapping</button></div><div id="remap-settings" class="grid settings hidden" style="margin-top:12px"><label>Report sales from locations<select id="location_remap_sources" multiple></select></label><label>As sales for location<select id="location_remap_target"></select></label></div><div id="remap-help" class="hint hidden" style="margin-top:8px">Sales from the selected locations are added to the target location. The selected source locations will not appear as order locations.</div><div id="remap-status" class="status"></div></details></section>
 <section class="panel"><h2 style="margin-top:0;font-size:18px">Import Spruce reports</h2><details class="panel" style="margin:0 0 14px;padding:12px;background:#f7fafc"><summary><b>Import help</b></summary><ul style="margin:10px 0 0;padding-left:20px"><li><b>Multi-branch reports (detailed consolidation):</b> Upload the Stock Status and 12-month Usage reports that include all required branch detail. Leave Single-branch report format unchecked.</li><li><b>Single-branch reports:</b> Upload reports generated for one branch only, check Single-branch report format, then select the branch that produced the reports.</li></ul></details><div class="grid import"><label>Stock Status CSV<input id="stock-file" type="file" accept=".csv"></label><label>12-month Usage CSV<input id="usage-file" type="file" accept=".csv"></label><div><button id="import">Process and save reports</button><button id="open-data-folder" class="secondary" style="margin-left:8px">Open data folder</button><button id="clear-database" class="secondary" style="margin:8px 0 0">Clear imported data</button></div></div><div class="actions" style="margin-top:12px"><label><input id="single-branch" class="check" type="checkbox"> Single-branch report format</label><label style="min-width:260px">Single-report branch<select id="import-branch" style="height:auto;margin-top:4px"></select></label></div><div class="hint" style="margin-top:8px">Imported data remains available until it is replaced or cleared.</div><div id="import-status"></div></section>
+<section class="panel"><details><summary><b>Vendor mapping</b></summary><div class="grid import" style="margin-top:12px"><label>Spruce vendor mapping CSV<input id="vendor-map-file" type="file" accept=".csv"></label><div><button id="upload-vendor-map">Upload and apply mapping</button></div></div><div class="hint" style="margin-top:8px">Upload a CSV with SKU and Vendor columns. It replaces the active mapping and updates the current imported inventory.</div><div id="vendor-map-status" class="status"></div></details></section>
 <section class="panel"><h2 style="margin-top:0;font-size:18px">Filters</h2><div class="grid"><label>Branches<select id="branches" multiple></select></label><label>Vendors<select id="vendors" multiple></select></label><label>SKU or description<input id="search" placeholder="Search items"></label><label>Options<br><span style="display:inline-block;margin-top:12px"><input id="inactive" class="check" type="checkbox"> Show inactive items</span></label></div></section>
 <section class="panel"><div class="actions"><button id="select-recommended">Select recommended (filtered)</button><button id="clear-selection" class="secondary">Clear selection</button><span id="summary" class="summary">0 selected orders · 0 units</span></div><div id="load-error" class="error"></div><div class="table-wrap" style="margin-top:14px"><table id="inventory-table"><thead><tr><th data-sort="order_selected">Order?</th><th class="left" data-sort="sku">SKU</th><th class="left" data-sort="description">Description</th><th data-sort="vendor">Vendor</th><th data-sort="branch_id">Branch</th><th class="left" data-sort="branch_name">Branch name</th><th data-sort="on_hand">On hand</th><th data-sort="on_order">On order</th><th data-sort="available">Available</th><th data-sort="last_12_month_sales">12-month sales</th><th data-sort="avg_daily_sales">Avg. daily sales</th><th data-sort="projected_days_remaining">Projected days</th><th data-sort="recommended_order_qty">Recommended</th><th data-sort="order_amount">Order amount</th></tr></thead><tbody id="inventory"></tbody></table></div></section>
 <section class="panel"><div class="actions"><h2 style="margin:0;font-size:18px">Purchase-order preview</h2><button id="download" class="secondary">Download consolidated order CSV</button></div><div id="preview-empty" class="hint" style="margin-top:12px">Select one or more order lines to preview the consolidated order.</div><div id="preview-wrap" class="table-wrap hidden" style="margin-top:12px"><table id="preview"></table></div></section>
@@ -79,6 +85,7 @@ $("select-recommended").onclick=()=>{visible().filter(r=>num(r.recommended_order
 $("location_remap_enabled").onchange=updateRemapVisibility;
 async function saveSettings(statusId){try{let settings={};["stock_target_days","vendor_lead_time_days"].forEach(n=>settings[n]=num($(n).value));settings.location_remap_enabled=$("location_remap_enabled").value==="true";settings.location_remap_sources=[...$("location_remap_sources").selectedOptions].map(option=>option.value);settings.location_remap_target=$("location_remap_target").value;await api("/api/settings",settings);status(statusId,"Settings saved.","success");await load()}catch(error){status(statusId,error.message,"error")}}
 $("save-settings").onclick=()=>saveSettings("settings-status");$("save-remap-settings").onclick=()=>saveSettings("remap-status");
+$("upload-vendor-map").onclick=async()=>{let file=$("vendor-map-file").files[0];if(!file){status("vendor-map-status","Select a vendor mapping CSV first.","error");return}try{let result=await api("/api/vendor-mapping",{vendor_csv:await file.text()});status("vendor-map-status","Mapping applied: "+result.mapped_skus+" SKUs and "+result.mapped_inventory_rows+" inventory rows assigned.","success");await load();populateVendorFilter()}catch(error){status("vendor-map-status",error.message,"error")}};
 $("import").onclick=async()=>{let stock=$("stock-file").files[0],usage=$("usage-file").files[0];if(!stock||!usage){status("import-status","Select both report files first.","error");return}let button=$("import"),singleBranch=$("single-branch").checked;button.disabled=true;status("import-status","Importing reports…","status");try{await api("/api/import",{stock_csv:await stock.text(),usage_csv:await usage.text(),single_branch:singleBranch,branch_id:$("import-branch").value});selected.clear();amounts={};status("import-status","Reports processed and saved.","success");await load()}catch(error){status("import-status",error.message,"error")}finally{button.disabled=false}};
 if(!hasDesktopApi())$("open-data-folder").hidden=true;$("open-data-folder").onclick=async()=>{try{if(!hasDesktopApi()||typeof window.pywebview.api.open_data_folder!=="function")throw Error("The desktop folder action is not ready. Rebuild and reinstall the updated application.");await window.pywebview.api.open_data_folder()}catch(error){status("import-status",error.message,"error")}};
 $("clear-database").onclick=async()=>{if(!confirm("Clear all imported inventory and usage data for this session?"))return;try{await api("/api/clear-database",{});selected.clear();amounts={};$("inventory").innerHTML="";preview();status("import-status","Imported data cleared. Upload new Spruce reports to continue.","success")}catch(error){status("import-status",error.message,"error")}};
@@ -144,6 +151,14 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/settings":
                 save_settings(payload)
                 self.json(200, {"saved": True})
+                return
+            if path == "/api/vendor-mapping":
+                vendor_map = save_vendor_map(str(payload["vendor_csv"]))
+                mapped_rows = refresh_inventory_vendors(vendor_map)
+                self.json(200, {
+                    "mapped_skus": len(vendor_map),
+                    "mapped_inventory_rows": mapped_rows,
+                })
                 return
             if path == "/api/import":
                 stock = str(payload["stock_csv"])

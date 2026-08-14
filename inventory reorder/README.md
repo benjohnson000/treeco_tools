@@ -17,6 +17,9 @@
 - `data/imports/`: archived source reports from every successful import.
 - `inventory.db`: temporary database for the current application session.
 
+To update SKU vendor assignments, use the **Vendor mapping** panel in the web
+application to upload Spruce's CSV containing `SKU` and `Vendor` columns.
+
 ## Deploy internally on Railway
 
 Create a Railway service using this folder as its root directory. The included
