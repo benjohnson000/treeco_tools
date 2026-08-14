@@ -12,7 +12,10 @@ STOCK_COLUMNS = [
     "available", "min_qty", "max_qty", "suggested_qty", "unit", "last_received",
     "last_cost", "avg_cost", "vendor",
 ]
-USAGE_COLUMNS = ["sku", "branch_id", "last_12_month_sales"]
+USAGE_COLUMNS = [
+    "sku", "branch_id", "last_12_month_sales", "last_6_month_sales",
+    "previous_6_month_sales",
+]
 
 
 def load_spruce_stock(filename, vendors_filename=None, branches_filename=None):
@@ -86,6 +89,8 @@ def load_spruce_usage(filename, branches_filename=None):
             "sku": current_sku,
             "branch_id": row[0].strip(),
             "last_12_month_sales": sum(monthly_sales),
+            "previous_6_month_sales": sum(monthly_sales[:6]),
+            "last_6_month_sales": sum(monthly_sales[6:]),
         })
 
     if month_columns is None:
@@ -152,10 +157,13 @@ def load_spruce_single_branch_usage(filename, branch_id, branches_filename=None)
             continue
         if not found_header or not _is_single_branch_usage_row(row):
             continue
+        monthly_sales = [_number(row[index]) for index in range(3, 15)]
         records.append({
             "sku": row[0].strip(),
             "branch_id": branch_id,
-            "last_12_month_sales": sum(_number(row[index]) for index in range(3, 15)),
+            "last_12_month_sales": sum(monthly_sales),
+            "previous_6_month_sales": sum(monthly_sales[:6]),
+            "last_6_month_sales": sum(monthly_sales[6:]),
         })
 
     if not found_header:
