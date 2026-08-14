@@ -2,7 +2,7 @@
 
 ## Daily workflow
 
-1. Double-click `start_app.bat`.
+1. Open the deployed Railway application.
 2. Generate the Spruce Stock Status CSV and the 12-month Usage CSV.
 3. Upload both files in the Import Spruce reports section.
 4. Review the recommendations, adjust order amounts, and download the consolidated order CSV.
@@ -16,22 +16,6 @@
 - `data/treeco-horizontal-logo-white.png`: Treeco dashboard logo.
 - `data/imports/`: archived source reports from every successful import.
 - `inventory.db`: temporary database for the current application session.
-
-## First-time setup
-
-Install Python 3.11 or newer, selecting **Add Python to PATH**, then run:
-
-```powershell
-python -m pip install -r requirements.txt
-```
-
-After that, double-click `start_app.bat` to open the native desktop tool.
-
-## Build a standalone Windows executable
-
-Run `./build_desktop.ps1` from PowerShell. The distributable application is
-created in `dist`. Keep `Spruce Reorder Tool.exe`, `settings.json`, and the
-`data` folder together when copying the tool to another computer.
 
 ## Deploy internally on Railway
 
@@ -48,5 +32,4 @@ vendor and branch configuration, imported reports, and the active inventory
 database there. On its first run, it copies the default configuration files to
 the empty volume; later changes persist across deployments.
 
-The browser version downloads the consolidated order CSV directly. The desktop
-only **Open data folder** button is automatically hidden in the browser.
+The application downloads the consolidated order CSV directly in the browser.

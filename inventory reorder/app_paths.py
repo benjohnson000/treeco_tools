@@ -1,18 +1,9 @@
-"""Application folders for desktop builds and Railway deployments."""
+"""Application folders for the Railway web deployment."""
 
 import os
 import shutil
 from pathlib import Path
-import sys
-
-
-# PyInstaller unpacks code to a temporary folder. User data must stay beside
-# the executable so it remains available between runs and upgrades.
-APP_DIR = (
-    Path(sys.executable).resolve().parent
-    if getattr(sys, "frozen", False)
-    else Path(__file__).resolve().parent
-)
+APP_DIR = Path(__file__).resolve().parent
 DEFAULT_DATA_DIR = APP_DIR / "data"
 DATA_DIR = Path(
     os.environ.get("DATA_DIR")

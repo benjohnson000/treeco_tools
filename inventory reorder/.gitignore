@@ -5,11 +5,3 @@ __pycache__/
 *.db
 data/imports/
 data/backups/
-
-# PyInstaller build output
-build/
-dist/
-*.spec
-
-# Generated from logo.png during the desktop build
-icon.ico

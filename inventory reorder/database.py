@@ -18,8 +18,3 @@ def clear_imported_data():
     engine.dispose()
     if DATABASE_FILE.exists():
         DATABASE_FILE.unlink()
-
-
-def start_new_session():
-    """Discard any previous session's data when the application opens."""
-    clear_imported_data()
